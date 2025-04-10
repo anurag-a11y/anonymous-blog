@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Cozy Blog</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      color: #f4f4f4;
+      padding: 2rem;
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #ffb3b3;
+    }
+    #blogInput {
+      width: 100%;
+      height: 100px;
+      background: #333;
+      color: #f4f4f4;
+      border: none;
+      padding: 1rem;
+      font-size: 1rem;
+      border-radius: 8px;
+    }
+    #postButton {
+      margin-top: 10px;
+      padding: 0.5rem 1rem;
+      background: #ff6666;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .post {
+      background: #2a2a2a;
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      position: relative;
+    }
+    .admin-buttons {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .admin-buttons button {
+      margin-left: 5px;
+      background: crimson;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 3px;
+    }
+    .comment-box {
+      margin-top: 10px;
+    }
+    .comment {
+      margin-top: 5px;
+      padding: 5px 10px;
+      background: #3a3a3a;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>✨ Anonymous Cozy Blog ✨</h1>
+  <textarea id="blogInput" placeholder="write your blog here..."></textarea>
+  <button id="postButton">Post</button>
+  <div id="posts"></div>
+
+  <script>
+    let isAdmin = false;
+    const blogInput = document.getElementById("blogInput");
+    const postButton = document.getElementById("postButton");
+    const postsDiv = document.getElementById("posts");
+
+    let prompts = [
+      "What's on your mind today?",
+      "A thought worth sharing...",
+      "Write a secret, a poem, a rant...",
+      "What's something beautiful you noticed today?"
+    ];
+    blogInput.placeholder = prompts[Math.floor(Math.random() * prompts.length)];
+    blogInput.addEventListener('keydown', () => {
+      blogInput.placeholder = "";
+    });
+
+    postButton.onclick = () => {
+      const content = blogInput.value.trim();
+      if (!content) return;
+      const post = {
+        content,
+        comments: [],
+        timestamp: Date.now()
+      };
+      const allPosts = getPosts();
+      allPosts.unshift(post);
+      savePosts(allPosts);
+      blogInput.value = "";
+      renderPosts();
+    };
+
+    function getPosts() {
+      return JSON.parse(localStorage.getItem("posts") || "[]");
+    }
+
+    function savePosts(posts) {
+      localStorage.setItem("posts", JSON.stringify(posts));
+    }
+
+    function deletePost(index) {
+      const posts = getPosts();
+      posts.splice(index, 1);
+      savePosts(posts);
+      renderPosts();
+    }
+
+    function addComment(index, text) {
+      const posts = getPosts();
+      if (text.trim()) {
+        posts[index].comments.push(text);
+        savePosts(posts);
+        renderPosts();
+      }
+    }
+
+    function renderPosts() {
+      const posts = getPosts();
+      postsDiv.innerHTML = "";
+      posts.forEach((post, index) => {
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `
+          <div>${post.content}</div>
+          <div class="comment-box">
+            <input type="text" placeholder="Reply anonymously" id="comment-${index}" style="width:80%; background:#444; color:#eee; border:none; padding:4px;">
+            <button onclick="addComment(${index}, document.getElementById('comment-${index}').value)">Reply</button>
+          </div>
+          <div>
+            ${post.comments.map(c => `<div class='comment'>${c}</div>`).join('')}
+          </div>
+          <div class="admin-buttons" id="admin-${index}">
+            <button onclick="deletePost(${index})">Delete</button>
+          </div>
+        `;
+        postsDiv.appendChild(div);
+        if (isAdmin) {
+          document.getElementById(`admin-${index}`).style.display = "block";
+        }
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.shiftKey && e.key === 'A') {
+        isAdmin = !isAdmin;
+        renderPosts();
+        alert(isAdmin ? 'Admin mode activated' : 'Admin mode off');
+      }
+    });
+
+    renderPosts();
+  </script>
+</body>
+</html>
